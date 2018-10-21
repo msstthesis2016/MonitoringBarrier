@@ -1,0 +1,39 @@
+#include <NewPing.h>
+
+NewPing sonar1(13, 36, 400); // Sensor 1: trigger pin, echo pin, maximum distance in cm
+NewPing sonar2(21, 37, 400); // Sensor 2: same stuff
+NewPing sonar3(22, 38, 400);
+
+#define pingSpeed 1000 // Ping frequency (in milliseconds), fastest we should ping is about 35ms per sensor
+unsigned long pingTimer1, pingTimer2, pingTimer3;
+
+void setup() {
+  Serial.begin(115200); 
+  // Do other stuff here
+  pingTimer1 = millis() + pingSpeed; // Sensor 1 fires after 100ms (pingSpeed)
+  pingTimer2 = pingTimer1 + pingSpeed; // Sensor 2 fires 50ms later
+  pingTimer3 = pingTimer2 + pingSpeed;
+}
+
+void loop() {
+  if (millis() >= pingTimer1) {
+    pingTimer1 += pingSpeed; // Make sensor 1 fire again 100ms later (pingSpeed)
+    int in1 = sonar1.ping_cm();
+    Serial.print(in1);
+    Serial.print("   ");
+  }
+  if (millis() >= pingTimer2) {
+    pingTimer2 = pingTimer1 + (pingSpeed / 2); // Make sensor 2 fire again 50ms after sensor 1 fires
+    int in2 = sonar2.ping_cm();
+    Serial.print(in2);
+    Serial.print("   ");
+    // Both sensors pinged, process results here
+  }
+   if (millis() >= pingTimer2) {
+    pingTimer3 = pingTimer2 + (pingSpeed / 2); // Make sensor 2 fire again 50ms after sensor 1 fires
+    int in3 = sonar3.ping_cm();
+    Serial.println(in3);
+   }
+  delay(1500);
+  // Do other stuff here, notice how there's no delays in this sketch, so you have processing cycles to do other things :)
+}
