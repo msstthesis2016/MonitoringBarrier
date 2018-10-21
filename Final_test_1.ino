@@ -1,9 +1,11 @@
-
 #include <NewPing.h>
 
 #define SONAR_NUM 3      // Number of sensors.
 #define MAX_DISTANCE 400 // Maximum distance  cm
-
+#define MIN_DISTANCE 3  // Minimum distance  cm
+#define max_sample 20 // Maximum sample
+#define PIR 0
+#define RADAR 0
 /*
 #define FIREBASE_HOST "safe-barrier.firebaseapp.com" //Thay bằng địa chỉ firebase của bạn
 #define FIREBASE_AUTH ""   //Không dùng xác thực nên không đổi
@@ -42,7 +44,7 @@ typedef void (*Demo)(void);
 int demoMode = 0;
 int counter = 1;
 long duration50, distance50,duration100, distance100,duration150, distance150;
-
+int i;
 
 void setup() {
   
@@ -109,7 +111,6 @@ void loop() {
   digitalWrite(trig50, LOW);
   duration50 = pulseIn(echo50, HIGH);
   distance50 = (duration50/2) / 29.1;
-
   digitalWrite(trig100, LOW);  // Added this line
   delayMicroseconds(2); // Added this line
   digitalWrite(trig100, HIGH);
@@ -117,7 +118,6 @@ void loop() {
   digitalWrite(trig100, LOW);
   duration100 = pulseIn(echo100, HIGH);
   distance100 = (duration100/2) / 29.1;
-
   digitalWrite(trig150, LOW);  // Added this line
   delayMicroseconds(2); // Added this line
   digitalWrite(trig150, HIGH);
@@ -132,15 +132,19 @@ void loop() {
 
   
   //Ultrasonic 1
-  delay(500); // Wait 50ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
-  distance50=sonar[0].ping_cm();
+  for( i = 0; i<max_sample; i++)
+  {
+  delay(30); // Wait 50ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
+  distance50+=sonar[0].ping_cm();
+  }
+  distance50=distance50/max_sample;
   if (distance50 < 5) {  
      drawText(0,30,"Too close");
      Serial.println("Sensor1: Too close");
   }
   else {
   }
-  if (distance50 > 400 || distance50 <= 0){
+  if (distance50 > MAX_DISTANCE || distance50 <= MIN_DISTANCE){
     drawText(0,30,"Out of range");
     Serial.println("Sensor1: Out of range");
   }
@@ -149,14 +153,18 @@ void loop() {
     display.display();
     Serial.print("Sensor1: ");
     Serial.print(distance50);
-    Serial.println(" cm");
+    Serial.print(" cm   ");
   }
   
 
 
   //Ultrasonic 2
-  delay(500); // Wait 50ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
-  distance100=sonar[1].ping_cm();
+  for( i = 0; i<max_sample; i++)
+  {
+  delay(30); // Wait 50ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
+  distance100+=sonar[0].ping_cm();
+  }
+  distance100=distance100/max_sample;  //distance100=sonar[1].ping_cm();
 
   if (distance100 < 5) {  
      drawText(0,40,"Too close");
@@ -164,7 +172,7 @@ void loop() {
 }
   else {
   }
-  if (distance100 > 400 || distance100 <= 0){
+  if (distance100 > MAX_DISTANCE || distance100 <= MIN_DISTANCE){
     drawText(0,40,"Out of range");
     Serial.println("Sensor2: Out of range");
   }
@@ -173,14 +181,18 @@ void loop() {
     display.display();
     Serial.print("Sensor2: ");
     Serial.print(distance100);
-    Serial.println(" cm");
+    Serial.print(" cm  ");
   }
   
 
 
   // Utrasonic 3
-  delay(500); // Wait 50ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
-  distance150=sonar[2].ping_cm();
+  for( i = 0; i<max_sample; i++)
+  {
+  delay(30); // Wait 50ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
+  distance150+=sonar[0].ping_cm();
+  }
+  distance150=distance150/max_sample;
 
   if (distance150 < 5) {  
      drawText(0,50,"Too close");
@@ -188,7 +200,7 @@ void loop() {
   }
   else {
   }
-  if (distance150 > 400 || distance150 <= 0){
+  if (distance150 > MAX_DISTANCE || distance150 <= MIN_DISTANCE){
     drawText(0,50,"Out of range");
     Serial.println("Sensor3: Out of range");
   }
@@ -197,13 +209,14 @@ void loop() {
     display.display();
     Serial.print("Sensor3: ");
     Serial.print(distance150);
-    Serial.println(" cm");
+    Serial.print(" cm");
+    Serial.println(" ");
   }
   
 
   delay(500);//delay before display
 
-  
+  #if(RADAR)
   // Radar 1
   if (Motion1 == HIGH) {
     drawText(0,0,"R1 YES");
@@ -242,8 +255,10 @@ void loop() {
   display.display();
   Serial.println("NO motion 3 YES");
   }  
-  
+  #endif
   delay(500); //delay before display
+
+  #if(PIR)
   
   if(PIR1==HIGH)
   {
@@ -286,5 +301,7 @@ void loop() {
     Serial.println("P3 NO");
   }
   delay(500);//delay before display
+  
+  #endif
   
 }
