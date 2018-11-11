@@ -22,7 +22,7 @@
 
 // Set these to send data
 #define FIREBASE_HOST "safe-barrier.firebaseio.com"
-#define FIREBASE_AUTH "G69eKB3PPPNQ0gJAIroIvBRdegI5HmlAQCy5657z"
+#define FIREBASE_AUTH ""
 #define WIFI_SSID "Mi Max"
 #define WIFI_PASSWORD ""
 
