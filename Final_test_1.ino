@@ -1,19 +1,29 @@
+// smart barrier for msst2016 thesis
+// hatran3e
 #include <NewPing.h>
 
+#include "SSD1306.h" // alias for `#include "SSD1306Wire.h"`
+
+#include <WiFi.h>
+#include <IOXhop_FirebaseESP32.h>
+//set config for sonar sensors
 #define SONAR_NUM 3      // Number of sensors.
 #define MAX_DISTANCE 400 // Maximum distance  cm
 #define MIN_DISTANCE 3  // Minimum distance  cm
 #define max_sample 20 // Maximum sample
-#define PIR 0
-#define RADAR 0
-/*
-#define FIREBASE_HOST "safe-barrier.firebaseapp.com" //Thay bằng địa chỉ firebase của bạn
-#define FIREBASE_AUTH ""   //Không dùng xác thực nên không đổi
-#define WIFI_SSID "ten_wifi"   //Thay wifi và mật khẩu
-#define WIFI_PASSWORD "mat_khau"
-*/
 
-#include "SSD1306.h" // alias for `#include "SSD1306Wire.h"`
+//display or close on LCD 1/0: display/close
+#define PIR 1
+#define RADAR 1
+#define SONAR 1
+
+// Set these to run example.
+#define FIREBASE_HOST "safe-barrier.firebaseio.com"
+#define FIREBASE_AUTH "G69eKB3PPPNQ0gJAIroIvBRdegI5HmlAQCy5657z"
+#define WIFI_SSID "Mi Max"
+#define WIFI_PASSWORD "1111aaaa2222"
+
+// define pins
 #define PIN_RADAR1 17
 #define PIN_RADAR2 35
 #define PIN_RADAR3 39
@@ -21,8 +31,8 @@
 #define PIN_PIR1 34
 #define PIN_PIR2 25
 #define PIN_PIR3 2
-
-#define trig50 13 //Ultra Sonic
+//Ultra Sonic
+#define trig50 13 
 #define echo50 36
 
 #define trig100 21
@@ -31,23 +41,26 @@
 #define trig150 22
 #define echo150 38
 
-
 NewPing sonar[SONAR_NUM] = {   // Sensor object array.
   NewPing(trig50, echo50, MAX_DISTANCE), // Each sensor's trigger pin, echo pin, and max distance to ping. 
   NewPing(trig100, echo100, MAX_DISTANCE), 
   NewPing(trig150, echo150, MAX_DISTANCE)
 };
 
-SSD1306  display(0x3c, 4, 15);
-typedef void (*Demo)(void);
+// define LCD display config
+#define SDA    4
+#define SCL   15
+#define RST   16 //RST must be set by software
+SSD1306  display(0x3c, SDA, SCL, RST);
 
-int demoMode = 0;
-int counter = 1;
-long duration50, distance50,duration100, distance100,duration150, distance150;
+//variables used in program
+long  distance50, distance100, distance150;
 int i;
+int n = 0;
 
 void setup() {
   
+  //set up IO
   pinMode(PIN_RADAR1, INPUT);
   pinMode(PIN_RADAR2, INPUT);
   pinMode(PIN_RADAR3, INPUT);
@@ -56,95 +69,66 @@ void setup() {
   pinMode(PIN_PIR2,INPUT);
   pinMode(PIN_PIR3,INPUT);
 
-  /*
-  pinMode(trig50, OUTPUT);
-  pinMode(echo50, INPUT);
-  pinMode(trig100, OUTPUT);
-  pinMode(echo100, INPUT);
-  pinMode(trig150, OUTPUT);
-  pinMode(echo150, INPUT);
-  */
-  
-  
-  
+  //set up LCD
   pinMode(16,OUTPUT);
   digitalWrite(16, LOW);    // set GPIO16 low to reset OLED
   delay(50); 
   digitalWrite(16, HIGH); // while OLED is running, must set GPIO16 in high
-  
   Serial.begin(115200);
   Serial.println();
   Serial.println();
-
   display.init();
 
   display.flipScreenVertically();
   display.setFont(ArialMT_Plain_10);
+
+  // connect to wifi.
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print("connecting");
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println();
+  Serial.print("connected: ");
+  Serial.println(WiFi.localIP());
   
+  Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
 }
 
-void drawText(int x, int y, char input_text[] ) {
+void drawText(int x, int y, char* input_text ) {
     display.setTextAlignment(TEXT_ALIGN_LEFT);
     display.setFont(ArialMT_Plain_10);
     display.drawString(x, y, input_text);
     
 }
-
-
 void loop() {
+
   display.clear ();
-  
   int Motion1 = digitalRead(PIN_RADAR1);
   int Motion2 = digitalRead(PIN_RADAR2);
   int Motion3 = digitalRead(PIN_RADAR3);
   
   int PIR1 = digitalRead(PIN_PIR1);
   int PIR2 = digitalRead(PIN_PIR2);
-  int PIR3 = digitalRead(PIN_PIR3);
+  int PIR3 = digitalRead(PIN_PIR3);   
 
-
-  /*
-  digitalWrite(trig50, LOW);  // Added this line
-  delayMicroseconds(2); // Added this line
-  digitalWrite(trig50, HIGH);
-  delayMicroseconds(10); // Added this line
-  digitalWrite(trig50, LOW);
-  duration50 = pulseIn(echo50, HIGH);
-  distance50 = (duration50/2) / 29.1;
-  digitalWrite(trig100, LOW);  // Added this line
-  delayMicroseconds(2); // Added this line
-  digitalWrite(trig100, HIGH);
-  delayMicroseconds(10); // Added this line
-  digitalWrite(trig100, LOW);
-  duration100 = pulseIn(echo100, HIGH);
-  distance100 = (duration100/2) / 29.1;
-  digitalWrite(trig150, LOW);  // Added this line
-  delayMicroseconds(2); // Added this line
-  digitalWrite(trig150, HIGH);
-  delayMicroseconds(10); // Added this line
-  digitalWrite(trig150, LOW);
-  duration150 = pulseIn(echo150, HIGH);
-  distance150 = (duration150/2) / 29.1;
-  */
-    
-    
-
-
-  
+#if(SONAR)
   //Ultrasonic 1
   for( i = 0; i<max_sample; i++)
   {
   delay(30); // Wait 50ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
   distance50+=sonar[0].ping_cm();
   }
-  distance50=distance50/max_sample;
-  if (distance50 < 5) {  
-     drawText(0,30,"Too close");
-     Serial.println("Sensor1: Too close");
+  
+  distance50=distance50/max_sample; //avarage distance
+  
+  if (distance50 < MIN_DISTANCE) { 
+      display.drawString(0, 30, "Too close"); 
+      drawText(0,30,"Too close");
+      Serial.println("Sensor1: Too close");
   }
-  else {
-  }
-  if (distance50 > MAX_DISTANCE || distance50 <= MIN_DISTANCE){
+  else if (distance50 > MAX_DISTANCE || distance50 <= MIN_DISTANCE){
     drawText(0,30,"Out of range");
     Serial.println("Sensor1: Out of range");
   }
@@ -156,23 +140,20 @@ void loop() {
     Serial.print(" cm   ");
   }
   
-
-
   //Ultrasonic 2
   for( i = 0; i<max_sample; i++)
   {
   delay(30); // Wait 50ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
   distance100+=sonar[0].ping_cm();
   }
-  distance100=distance100/max_sample;  //distance100=sonar[1].ping_cm();
+  
+  distance100=distance100/max_sample;  //avarage distance
 
-  if (distance100 < 5) {  
+  if (distance100 < MIN_DISTANCE) {  
      drawText(0,40,"Too close");
      Serial.println("Sensor2: Too close");
-}
-  else {
   }
-  if (distance100 > MAX_DISTANCE || distance100 <= MIN_DISTANCE){
+  else if (distance100 > MAX_DISTANCE || distance100 <= MIN_DISTANCE){
     drawText(0,40,"Out of range");
     Serial.println("Sensor2: Out of range");
   }
@@ -184,23 +165,20 @@ void loop() {
     Serial.print(" cm  ");
   }
   
-
-
   // Utrasonic 3
   for( i = 0; i<max_sample; i++)
   {
   delay(30); // Wait 50ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
   distance150+=sonar[0].ping_cm();
   }
-  distance150=distance150/max_sample;
+  
+  distance150=distance150/max_sample; //avarage distance
 
-  if (distance150 < 5) {  
+  if (distance150 < MIN_DISTANCE) {  
      drawText(0,50,"Too close");
      Serial.println("Sensor3: Too close");
   }
-  else {
-  }
-  if (distance150 > MAX_DISTANCE || distance150 <= MIN_DISTANCE){
+  else if (distance150 > MAX_DISTANCE || distance150 <= MIN_DISTANCE){
     drawText(0,50,"Out of range");
     Serial.println("Sensor3: Out of range");
   }
@@ -212,15 +190,13 @@ void loop() {
     Serial.print(" cm");
     Serial.println(" ");
   }
-  
-
   delay(500);//delay before display
+#endif
 
-  #if(RADAR)
+#if(RADAR)
   // Radar 1
   if (Motion1 == HIGH) {
     drawText(0,0,"R1 YES");
-  // write the buffer to the display
     display.display();
     Serial.println("motion 1 YES");
   }
@@ -233,7 +209,6 @@ void loop() {
   // Radar 2
   if (Motion2 == HIGH) {
     drawText(0,10,"R2 YES");
-  // write the buffer to the display
     display.display();
     Serial.println("motion 2 YES");
   }
@@ -245,8 +220,7 @@ void loop() {
   
   //Radar 3
   if (Motion3 == HIGH) {
-   drawText(0,20,"R3 YES");
-  // write the buffer to the display
+    drawText(0,20,"R3 YES");
     display.display();
     Serial.println("motion 3 YES");
   }
@@ -254,11 +228,11 @@ void loop() {
   drawText(0,20,"R3 NO");
   display.display();
   Serial.println("NO motion 3 YES");
-  }  
+  } 
+  delay(500); //delay before display 
   #endif
-  delay(500); //delay before display
 
-  #if(PIR)
+#if(PIR)
   
   if(PIR1==HIGH)
   {
@@ -285,8 +259,6 @@ void loop() {
     display.display();
     Serial.println("P2 NO");
   }
-  
-  
 
   if(PIR3==HIGH)
   {
@@ -303,5 +275,66 @@ void loop() {
   delay(500);//delay before display
   
   #endif
+
   
+  // set value
+  Firebase.setFloat("number", 42.0);
+  // handle error
+  if (Firebase.failed()) {
+      Serial.print("setting /number failed:");
+      Serial.println(Firebase.error());  
+      return;
+  }
+  delay(1000);
+  
+  // update value
+  Firebase.setFloat("number", 43.0);
+  // handle error
+  if (Firebase.failed()) {
+      Serial.print("setting /number failed:");
+      Serial.println(Firebase.error());  
+      return;
+  }
+  delay(1000);
+
+  // get value 
+  Serial.print("number: ");
+  Serial.println(Firebase.getFloat("number"));
+  delay(1000);
+
+  // remove value
+  Firebase.remove("number");
+  delay(1000);
+
+  // set string value
+  Firebase.setString("message", "hello world");
+  // handle error
+  if (Firebase.failed()) {
+      Serial.print("setting /message failed:");
+      Serial.println(Firebase.error());  
+      return;
+  }
+  delay(1000);
+  
+  // set bool value
+  Firebase.setBool("truth", false);
+  // handle error
+  if (Firebase.failed()) {
+      Serial.print("setting /truth failed:");
+      Serial.println(Firebase.error());  
+      return;
+  }
+  delay(1000);
+
+  // append a new value to /logs
+  String name = Firebase.pushInt("logs", n++);
+  // handle error
+  if (Firebase.failed()) {
+      Serial.print("pushing /logs failed:");
+      Serial.println(Firebase.error());  
+      return;
+  }
+  Serial.print("pushed: /logs/");
+  Serial.println(name);
+  delay(1000);
 }
