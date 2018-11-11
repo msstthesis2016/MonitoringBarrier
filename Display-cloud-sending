@@ -2,7 +2,7 @@
 // hatran3e
 #include <NewPing.h>
 
-#include "SSD1306.h" // alias for `#include "SSD1306Wire.h"`
+#include "SSD1306.h" // OLED library
 
 #include <WiFi.h>
 #include <IOXhop_FirebaseESP32.h>
