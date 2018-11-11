@@ -21,10 +21,10 @@
 #define CLOUD 0
 
 // Set these to send data
-#define FIREBASE_HOST "safe-barrier.firebaseio.com"
-#define FIREBASE_AUTH ""
+#define FIREBASE_HOST "yourhost.firebaseio.com"
+#define FIREBASE_AUTH "your_key"
 #define WIFI_SSID "Mi Max"
-#define WIFI_PASSWORD ""
+#define WIFI_PASSWORD "you_pwr"
 
 // define pins
 #define PIN_RADAR1 17
