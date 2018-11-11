@@ -17,11 +17,14 @@
 #define RADAR 1
 #define SONAR 1
 
-// Set these to run example.
+// sending to cloud
+#define CLOUD 0
+
+// Set these to send data
 #define FIREBASE_HOST "safe-barrier.firebaseio.com"
 #define FIREBASE_AUTH "G69eKB3PPPNQ0gJAIroIvBRdegI5HmlAQCy5657z"
 #define WIFI_SSID "Mi Max"
-#define WIFI_PASSWORD "1111aaaa2222"
+#define WIFI_PASSWORD ""
 
 // define pins
 #define PIN_RADAR1 17
@@ -276,9 +279,12 @@ void loop() {
   
   #endif
 
+#if(CLOUD)
   
   // set value
-  Firebase.setFloat("number", 42.0);
+  Firebase.setFloat("distance50", distance50);
+  Firebase.setFloat("distance100", distance100);
+  Firebase.setFloat("distance150", distance150);
   // handle error
   if (Firebase.failed()) {
       Serial.print("setting /number failed:");
@@ -287,34 +293,34 @@ void loop() {
   }
   delay(1000);
   
-  // update value
-  Firebase.setFloat("number", 43.0);
+  /* // update value
+  Firebase.setFloat("distance100", distance100);
   // handle error
   if (Firebase.failed()) {
       Serial.print("setting /number failed:");
       Serial.println(Firebase.error());  
       return;
   }
-  delay(1000);
+  delay(1000); */
 
   // get value 
-  Serial.print("number: ");
-  Serial.println(Firebase.getFloat("number"));
-  delay(1000);
+  Serial.print("distance50: ");
+  Serial.println(Firebase.getFloat("distance50"));
+  delay(500);
 
-  // remove value
-  Firebase.remove("number");
-  delay(1000);
+  /* // remove value
+  Firebase.remove("distance50");
+  delay(1000); */
 
   // set string value
-  Firebase.setString("message", "hello world");
+  //Firebase.setString("message", "hello world");
   // handle error
-  if (Firebase.failed()) {
+  /* if (Firebase.failed()) {
       Serial.print("setting /message failed:");
       Serial.println(Firebase.error());  
       return;
   }
-  delay(1000);
+  delay(1000); */
   
   // set bool value
   Firebase.setBool("truth", false);
@@ -337,4 +343,7 @@ void loop() {
   Serial.print("pushed: /logs/");
   Serial.println(name);
   delay(1000);
+  
+#endif
+  
 }
