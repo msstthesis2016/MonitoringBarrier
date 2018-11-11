@@ -18,10 +18,10 @@
 #define SONAR 1
 
 // Set these to run example.
-#define FIREBASE_HOST "safe-barrier.firebaseio.com"
-#define FIREBASE_AUTH "G69eKB3PPPNQ0gJAIroIvBRdegI5HmlAQCy5657z"
+#define FIREBASE_HOST "yourhost.firebaseio.com"
+#define FIREBASE_AUTH "your key"
 #define WIFI_SSID "Mi Max"
-#define WIFI_PASSWORD "1111aaaa2222"
+#define WIFI_PASSWORD "your_pw"
 
 // define pins
 #define PIN_RADAR1 17
