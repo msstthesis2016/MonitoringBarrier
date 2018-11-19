@@ -9,8 +9,8 @@
 //set config for sonar sensors
 #define SONAR_NUM 3      // Number of sensors.
 #define MAX_DISTANCE 400 // Maximum distance  cm
-#define MIN_DISTANCE 3  // Minimum distance  cm
-#define max_sample 20 // Maximum sample
+#define MIN_DISTANCE 5  // Minimum distance  cm
+#define max_sample 12 	// Maximum sample
 
 //display or clear text on LCD 1/0: display/clear
 #define PIR 1
@@ -24,16 +24,16 @@
 #define TIME 1
 
 // AP list
-#define AP1 "AP1"
-#define PW1 "PW1"
-#define AP2 "AP2"
-#define PW2 "PW2"
-#define AP3 "AP3"
-#define PW3 "PW3"
+#define AP1 ""
+#define PW1 ""
+#define AP2 ""
+#define PW2 ""
+#define AP3 ""
+#define PW3 ""
 
 // Set these to send data
-#define FIREBASE_HOST "yourhost.firebaseio.com"
-#define FIREBASE_AUTH "yourkey"
+#define FIREBASE_HOST ""
+#define FIREBASE_AUTH ""
 
 // define pins
 #define PIN_RADAR1 17
@@ -53,30 +53,47 @@
 #define trig150 22
 #define echo150 38
 
+#define S50 "Distance50:"
+#define S100 "Distance100:"
+#define S150 "Distance150:"
+
 // define OLED display config
 #define SDA    4
 #define SCL   15
 #define RST   16 //RST must be set by software
 SSD1306  display(0x3c, SDA, SCL, RST);
 
+#define Line_1 0	//based on y dimention
+#define Line_2 10
+#define Line_3 20
+#define Line_4 30
+#define Line_5 40
+#define Line_6 50
+
+#define Row_1 0		// based on x dimention
+#define Row_2 45
+#define Row_3 90
+
+
+
 
 const char* ntpServer = "pool.ntp.org";
-const long  gmtOffset_sec = 3600;
-const int   daylightOffset_sec = 3600;
+const long  gmtOffset_sec = 7200+18000; //GMT+7
+const int   daylightOffset_sec = 0;
 
-
+String Str_time, Str_data;
 
 WiFiMulti wifiMulti;
 typedef struct Data_Fire{
-    int D1;
-    int D2;
-    int D3;
+    int D50;
+    int D100;
+    int D150;
     bool R1;
     bool R2;
     bool R3;
-    bool P1;
-    bool P2;
-    bool P3;
+    bool PIR1;
+    bool PIR2;
+    bool PIR3;
 } Data_Fire;
 
 Data_Fire Fire_store;
@@ -88,7 +105,7 @@ NewPing sonar[SONAR_NUM] = {   // Sensor object array.
 };
 
 //variables used in program
-long  distance50, distance100, distance150;
+// long  Fire_store.D50, Fire_store.D100, Fire_store.D150;
 int i;
 int n = 0;
 struct tm timeinfo;
@@ -104,7 +121,7 @@ void printLocalTime()
 }
 
 
-void drawText(int x, int y, char* input_text ) {
+void drawText(int x, int y, String input_text ) {
     display.setTextAlignment(TEXT_ALIGN_LEFT);
     display.setFont(ArialMT_Plain_10);
     display.drawString(x, y, input_text);
@@ -138,15 +155,6 @@ void setup() {
   wifiMulti.addAP(AP1, PW1);
   wifiMulti.addAP(AP2, PW2);
   wifiMulti.addAP(AP3, PW3);
-
-
-  // connect to wifi.
-//  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-//  Serial.print("connecting");
-//  while (WiFi.status() != WL_CONNECTED) {
-//    Serial.print(".");
-//    delay(500);
-//  }
 
   Serial.println("Wait for connecting Wifi...");
   delay(500);
@@ -184,13 +192,13 @@ void setup() {
 void loop() {
 
   display.clear ();
-  int R1 = digitalRead(PIN_RADAR1);
-  int R2 = digitalRead(PIN_RADAR2);
-  int R3 = digitalRead(PIN_RADAR3);
+  Fire_store.R1 = digitalRead(PIN_RADAR1);
+  Fire_store.R2 = digitalRead(PIN_RADAR2);
+  Fire_store.R3 = digitalRead(PIN_RADAR3);
   
-  int PIR1 = digitalRead(PIN_PIR1);
-  int PIR2 = digitalRead(PIN_PIR2);
-  int PIR3 = digitalRead(PIN_PIR3);   
+  Fire_store.PIR1 = digitalRead(PIN_PIR1);
+  Fire_store.PIR2 = digitalRead(PIN_PIR2);
+  Fire_store.PIR3 = digitalRead(PIN_PIR3);   
   
 #if(TIME)
   if(!getLocalTime(&timeinfo)) // get timeinfo
@@ -199,13 +207,97 @@ void loop() {
   }
   else
   {
-	Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
-	// drawText(0,30,String(timeinfo.tm_hour));
-	Serial.println(timeinfo.tm_hour);
-	// drawText(0,30,String(timeinfo));
+	String(Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S"));
+	Str_time= String((timeinfo.tm_mday))+" - "+String((timeinfo.tm_hour))+":"+String((timeinfo.tm_min)) +":"+(String(timeinfo.tm_sec)); //day-hour:minute:second
+	drawText(Row_1,Line_1,Str_time);
   }
   
 
+#endif
+
+#if(RADAR)
+  // Radar 1
+  if (Fire_store.R1 == HIGH) {
+    drawText(Row_1,Line_2,"R1 YES");
+    display.display();
+    Serial.println("R1 YES");
+  }
+  else {
+	  drawText(Row_1,Line_2,"R1 NO");
+	  display.display();
+	  Serial.println("R1 NO");
+  }
+
+  // Radar 2
+  if (Fire_store.R2 == HIGH) {
+    drawText(Row_2,Line_2,"R2 YES");
+    display.display();
+    Serial.println("R2 YES");
+  }
+  else {
+	  drawText(Row_2,Line_2,"R2 NO");
+	  display.display();
+	  Serial.println("R2 NO");
+  }
+  
+  //Radar 3
+  if (Fire_store.R3 == HIGH) {
+    drawText(Row_3,Line_2,"R3 YES");
+    display.display();
+    Serial.println("R3 YES");
+  }
+  else {
+	  drawText(Row_3,Line_2,"R3 NO");
+	  display.display();
+	  Serial.println("R3 NO");
+  } 
+  // Serial.println();
+  delay(100); //delay before display 
+#endif
+	
+#if(PIR)
+  
+  if(Fire_store.PIR1 == HIGH)
+  {
+    drawText(Row_1,Line_3, "P1 YES");
+    display.display();
+    Serial.println("P1 YES");
+  }
+  else
+  {
+    drawText(Row_1,Line_3, "P1 NO");
+    display.display();
+    Serial.println("P1 NO");
+  }
+
+  if(Fire_store.PIR2 == HIGH)
+  {
+    drawText(Row_2,Line_3, "P2 YES");
+    display.display();
+    Serial.println("P2 YES");
+  }
+  else
+  {
+    drawText(Row_2,Line_3, "P2 NO");
+    display.display();
+    Serial.println("P2 NO");
+  }
+
+  if(Fire_store.PIR3 == HIGH)
+  {
+    drawText(Row_3,Line_3, "P3 YES");
+    display.display();
+    Serial.println("P3 YES");
+  }
+  else
+  {
+    drawText(Row_3,Line_3, "P3 NO");
+    display.display();
+    Serial.println("P3 NO");
+  }
+  // Serial.println();
+  delay(100);//delay before display
+  
 #endif
   
 #if(SONAR)
@@ -213,25 +305,29 @@ void loop() {
   for( i = 0; i<max_sample; i++)
   {
 	  delay(30); // Wait 50ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
-	  distance50 += sonar[0].ping_cm();
+	  Fire_store.D50 += sonar[0].ping_cm();
   }
   
-  distance50 = distance50/max_sample; //avarage distance
+  Fire_store.D50 = Fire_store.D50/max_sample; //avarage distance
   
-  if (distance50 < MIN_DISTANCE) { 
+  if (Fire_store.D50 < MIN_DISTANCE) { 
 //      display.drawString(0, 30, "Too close"); 
-      drawText(0,30,"Too close");
-      Serial.println("Sensor1: Too close");
+		drawText(0,30,"Too close");
+		Serial.print(S50);
+		Serial.print(Fire_store.D50);
+		Serial.print(" cm   ");
   }
-  else if (distance50 > MAX_DISTANCE || distance50 <= MIN_DISTANCE){
+  else if (Fire_store.D50 > MAX_DISTANCE || Fire_store.D50 <= MIN_DISTANCE){
 		drawText(0,30,"Out of range");
-		Serial.println("Sensor1: Out of range");
+		Serial.print(S50);
+		Serial.print(Fire_store.D50);
+		Serial.print(" cm   ");
   }
   else {
-		display.drawString(60, 30, String(distance50) + " cm");
+		display.drawString(60, 30, String(Fire_store.D50) + " cm");
 		display.display();
-		Serial.print("Sensor1: ");
-		Serial.print(distance50);
+		Serial.print(S50);
+		Serial.print(Fire_store.D50);
 		Serial.print(" cm   ");
   }
   
@@ -239,184 +335,115 @@ void loop() {
   for( i = 0; i<max_sample; i++)
   {
 	  delay(30); // Wait 50ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
-	  distance100 += sonar[0].ping_cm();
+	  Fire_store.D100 += sonar[0].ping_cm();
   }
   
-  distance100 = distance100/max_sample;  //avarage distance
+  Fire_store.D100 = Fire_store.D100/max_sample;  //avarage distance
 
-  if (distance100 < MIN_DISTANCE) {  
+  if (Fire_store.D100 < MIN_DISTANCE) {  
      drawText(0,40,"Too close");
-     Serial.println("Sensor2: Too close");
+     Serial.print(S100);
+	 Serial.print(Fire_store.D100);
+	 Serial.print(" cm   ");
   }
-  else if (distance100 > MAX_DISTANCE || distance100 <= MIN_DISTANCE){
-    drawText(0,40,"Out of range");
-    Serial.println("Sensor2: Out of range");
+  else if (Fire_store.D100 > MAX_DISTANCE || Fire_store.D100 <= MIN_DISTANCE){
+     drawText(0,40,"Out of range");
+     Serial.print(S100);
+	 Serial.print(Fire_store.D100);
+	 Serial.print(" cm   ");
   }
   else {
-    display.drawString(60, 40, String(distance100) + " cm");
+    display.drawString(60, 40, String(Fire_store.D100) + " cm");
     display.display();
-    Serial.print("Sensor2: ");
-    Serial.print(distance100);
-    Serial.print(" cm  ");
+    Serial.print(S100);
+	Serial.print(Fire_store.D100);
+	Serial.print(" cm   ");
   }
   
   // Utrasonic 3
   for( i = 0; i<max_sample; i++)
   {
 	  delay(30); // Wait 50ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
-	  distance150 += sonar[0].ping_cm();
+	  Fire_store.D150 += sonar[0].ping_cm();
   }
   
-  distance150 = distance150/max_sample; //avarage distance
+  Fire_store.D150 = Fire_store.D150/max_sample; //avarage distance
 
-  if (distance150 < MIN_DISTANCE) {  
+  if (Fire_store.D150 < MIN_DISTANCE) {  
      drawText(0,50,"Too close");
-     Serial.println("Sensor3: Too close");
+     Serial.print(S150);
+	 Serial.print(Fire_store.D150);
+	 Serial.println(" cm   ");
   }
-  else if (distance150 > MAX_DISTANCE || distance150 <= MIN_DISTANCE){
-    drawText(0,50,"Out of range");
-    Serial.println("Sensor3: Out of range");
+  else if (Fire_store.D150 > MAX_DISTANCE || Fire_store.D150 <= MIN_DISTANCE){
+     drawText(0,50,"Out of range");
+     Serial.print(S150);
+	 Serial.print(Fire_store.D150);
+	 Serial.println(" cm   ");
   }
   else {
-    display.drawString(60, 50, String(distance150) + " cm");
+    display.drawString(60, 50, String(Fire_store.D150) + " cm");
     display.display();
-    Serial.print("Sensor3: ");
-    Serial.print(distance150);
-    Serial.print(" cm");
+    Serial.print(S150);
+	Serial.print(Fire_store.D150);
+	Serial.println(" cm   ");
     Serial.println(" ");
   }
-  delay(500);//delay before display
+  delay(100);//delay before display
 #endif
-
-#if(RADAR)
-  // Radar 1
-  if (R1 == HIGH) {
-    drawText(0,0,"R1 YES");
-    display.display();
-    Serial.println("R1 YES");
-  }
-  else {
-	  drawText(0,0,"R1 NO");
-	  display.display();
-	  Serial.println("R1 NO");
-  }
-
-  // Radar 2
-  if (R2 == HIGH) {
-    drawText(0,10,"R2 YES");
-    display.display();
-    Serial.println("R2 YES");
-  }
-  else {
-	  drawText(0,10,"R2 NO");
-	  display.display();
-	  Serial.println("R2 NO");
-  }
-  
-  //Radar 3
-  if (R3 == HIGH) {
-    drawText(0,20,"R3 YES");
-    display.display();
-    Serial.println("R3 YES");
-  }
-  else {
-	  drawText(0,20,"R3 NO");
-	  display.display();
-	  Serial.println("R3 NO");
-  } 
-  delay(500); //delay before display 
-  #endif
-	Serial.println();
-#if(PIR)
-  
-  if(PIR1 == HIGH)
-  {
-    drawText(60, 0, "P1 YES");
-    display.display();
-    Serial.println("P1 YES");
-  }
-  else
-  {
-    drawText(60, 0, "P1 NO");
-    display.display();
-    Serial.println("P1 NO");
-  }
-
-  if(PIR2 == HIGH)
-  {
-    drawText(60, 10, "P2 YES");
-    display.display();
-    Serial.println("P2 YES");
-  }
-  else
-  {
-    drawText(60, 10, "P2 NO");
-    display.display();
-    Serial.println("P2 NO");
-  }
-
-  if(PIR3 == HIGH)
-  {
-    drawText(60, 20, "P3 YES");
-    display.display();
-    Serial.println("P3 YES");
-  }
-  else
-  {
-    drawText(60, 20, "P3 NO");
-    display.display();
-    Serial.println("P3 NO");
-  }
-  delay(500);//delay before display
-  
-  #endif
 
 #if(CLOUD)
   
-  // set value
-  Firebase.setFloat("Distance50", distance50);
-  Firebase.setFloat("Distance100", distance100);
-  Firebase.setFloat("Distance150", distance150);
-  Firebase.setBool("R1",R1);
-  Firebase.setBool("R2",R2);
-  Firebase.setBool("R3",R3);
-  Firebase.setBool("P1",PIR1);
-  Firebase.setBool("P2",PIR2);
-  Firebase.setBool("P3",PIR3);
+
+	// JsonObject& temperatureObject = jsonBuffer.createObject();
+	// JsonObject& tempTime = temperatureObject.createNestedObject("timestamp");
+	// tempTime[".sv"] = "timestamp";
+
+  // push value
+  Firebase.pushInt(S50, Fire_store.D50);
+  Firebase.pushInt(S100, Fire_store.D100);
+  Firebase.pushInt(S150, Fire_store.D150);
+  Firebase.pushBool("R1",Fire_store.R1);
+  Firebase.pushBool("R2",Fire_store.R2);
+  Firebase.pushBool("R3",Fire_store.R3);
+  Firebase.pushBool("P1",Fire_store.PIR1);
+  Firebase.pushBool("P2",Fire_store.PIR2);
+  Firebase.pushBool("P3",Fire_store.PIR3);
   // handle error
   if (Firebase.failed()) {
       Serial.print("setting /number failed:");
       Serial.println(Firebase.error());  
       return;
   }
-  delay(1000);
+  delay(100);
   
 
   // get value 
-  Serial.print("distance50: ");
-  Serial.println(Firebase.getFloat("distance50"));
-  delay(500);
+  // Serial.print("Distance50: ");
+  // Serial.println(Firebase.getInt("Distance50"));
+  // delay(500);
 
   
   // handle error
-  if (Firebase.failed()) {
-      Serial.print("setting /truth failed:");
-      Serial.println(Firebase.error());  
-      return;
-  }
-  delay(1000);
+  // if (Firebase.failed()) {
+      // Serial.print("setting /truth failed:");
+      // Serial.println(Firebase.error());  
+      // return;
+  // }
+  // delay(500);
 
   // append a new value to /logs
-  String name = Firebase.pushInt("logs", n++);
+  String name = Firebase.pushString("logs", Str_time);
+  
   // handle error
   if (Firebase.failed()) {
       Serial.print("pushing /logs failed:");
-      Serial.println(Firebase.error());  
+      Serial.println(Firebase.error());
       return;
   }
   Serial.print("pushed: /logs/");
   Serial.println(name);
-  delay(1000);
+  delay(100);
   
 #endif
   
