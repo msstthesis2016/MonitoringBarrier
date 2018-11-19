@@ -1,4 +1,4 @@
 # MonitoringBarrier
-# monitoring train barrier for safety purpose using firebase to store data for later processing
+#monitoring train barrier for safety purpose using firebase to store data for later processing
 # License
-# This project used open source library
+#This project used open source library
