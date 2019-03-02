@@ -10,7 +10,7 @@
 #define SONAR_NUM 3      // Number of sensors.
 #define MAX_DISTANCE 400 // Maximum distance  cm
 #define MIN_DISTANCE 5  // Minimum distance  cm
-#define max_sample 12 	// Maximum sample
+#define max_sample 5 	// Maximum sample
 
 //display or clear text on LCD 1/0: display/clear
 #define PIR 1
@@ -157,7 +157,7 @@ void setup() {
   wifiMulti.addAP(AP3, PW3);
 
   Serial.println("Wait for connecting Wifi...");
-  delay(500);
+  delay(50);
   if(wifiMulti.run() == WL_CONNECTED) {
     Serial.println();
     Serial.println("WiFi connected");
@@ -173,7 +173,7 @@ void setup() {
     {
       Serial.println("Reconnecting wifi...");
       display.drawString(0, 0, "Reconnecting wifi...");
-      delay(200);
+      delay(50);
       if(wifiMulti.run() == WL_CONNECTED)
       {
         Serial.println("");
@@ -208,7 +208,7 @@ void loop() {
   else
   {
 	String(Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S"));
-	Str_time= String((timeinfo.tm_mday))+" - "+String((timeinfo.tm_hour))+":"+String((timeinfo.tm_min)) +":"+(String(timeinfo.tm_sec)); //day-hour:minute:second
+	Str_time= String((timeinfo.tm_mday))+"-"+String((timeinfo.tm_hour))+":"+String((timeinfo.tm_min)) +":"+(String(timeinfo.tm_sec)); //day-hour:minute:second
 	drawText(Row_1,Line_1,Str_time);
   }
   
@@ -252,7 +252,7 @@ void loop() {
 	  Serial.println("R3 NO");
   } 
   // Serial.println();
-  delay(100); //delay before display 
+  delay(10); //delay before display 
 #endif
 	
 #if(PIR)
@@ -296,7 +296,7 @@ void loop() {
     Serial.println("P3 NO");
   }
   // Serial.println();
-  delay(100);//delay before display
+  delay(10);//delay before display
   
 #endif
   
@@ -387,53 +387,43 @@ void loop() {
     Serial.print(S150);
 	Serial.print(Fire_store.D150);
 	Serial.println(" cm   ");
-    Serial.println(" ");
+    Serial.println("-------------------------------");
   }
-  delay(100);//delay before display
+  delay(10);//delay before display
 #endif
 
 #if(CLOUD)
   
-
+	Str_data = Str_time + ","+ (Fire_store.D50) +","+ String(Fire_store.D100)+","+ String(Fire_store.D150);
+	String Str_radar = String(Fire_store.R1)+","+String(Fire_store.R2)+","+String(Fire_store.R3);
+	String Str_pir = String(Fire_store.PIR1)+","+String(Fire_store.PIR2)+","+String(Fire_store.PIR3);
+	
 	// JsonObject& temperatureObject = jsonBuffer.createObject();
 	// JsonObject& tempTime = temperatureObject.createNestedObject("timestamp");
 	// tempTime[".sv"] = "timestamp";
 
   // push value
-  Firebase.pushInt(S50, Fire_store.D50);
-  Firebase.pushInt(S100, Fire_store.D100);
-  Firebase.pushInt(S150, Fire_store.D150);
-  Firebase.pushBool("R1",Fire_store.R1);
-  Firebase.pushBool("R2",Fire_store.R2);
-  Firebase.pushBool("R3",Fire_store.R3);
-  Firebase.pushBool("P1",Fire_store.PIR1);
-  Firebase.pushBool("P2",Fire_store.PIR2);
-  Firebase.pushBool("P3",Fire_store.PIR3);
-  // handle error
-  if (Firebase.failed()) {
-      Serial.print("setting /number failed:");
-      Serial.println(Firebase.error());  
-      return;
-  }
-  delay(100);
-  
-
-  // get value 
-  // Serial.print("Distance50: ");
-  // Serial.println(Firebase.getInt("Distance50"));
-  // delay(500);
-
-  
+  // Firebase.pushInt(S50, Fire_store.D50);
+  // Firebase.pushInt(S100, Fire_store.D100);
+  // Firebase.pushInt(S150, Fire_store.D150);
+  // Firebase.pushBool("R1",Fire_store.R1);
+  // Firebase.pushBool("R2",Fire_store.R2);
+  // Firebase.pushBool("R3",Fire_store.R3);
+  // Firebase.pushBool("P1",Fire_store.PIR1);
+  // Firebase.pushBool("P2",Fire_store.PIR2);
+  // Firebase.pushBool("P3",Fire_store.PIR3);
   // handle error
   // if (Firebase.failed()) {
-      // Serial.print("setting /truth failed:");
+      // Serial.print("setting /number failed:");
       // Serial.println(Firebase.error());  
       // return;
   // }
-  // delay(500);
-
+  // delay(100);
+  
   // append a new value to /logs
-  String name = Firebase.pushString("logs", Str_time);
+  
+  String name = Firebase.pushString("logs", String(n++)+","+Str_data+","+Str_radar+","+Str_pir);
+  // Firebase.pushString("logs", Str_data);
   
   // handle error
   if (Firebase.failed()) {
@@ -443,9 +433,9 @@ void loop() {
   }
   Serial.print("pushed: /logs/");
   Serial.println(name);
-  delay(100);
+  Serial.println(Str_data);
+  delay(10);
   
 #endif
   
 }
-
